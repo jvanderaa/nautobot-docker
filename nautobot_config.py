@@ -3,6 +3,8 @@ from distutils.util import strtobool
 import os
 import sys
 
+from nautobot.core.settings import *  # noqa F401,F403
+
 
 def is_truthy(arg):
     """Convert "truthy" strings into Booleans.
@@ -35,8 +37,6 @@ for i in REQUIRED_ENV_VARS:
 #   Required settings   #
 #                       #
 #########################
-import os
-from nautobot.core.settings import *  # noqa F401,F403
 # This is a list of valid fully-qualified domain names (FQDNs) for the Nautobot server. Nautobot will not permit write
 # access to the server via any other hostnames. The first FQDN in the list will be treated as the preferred name.
 #
@@ -120,24 +120,24 @@ ALLOWED_URL_SCHEMES = (
 )
 # Optionally display a persistent banner at the top and/or bottom of every page. HTML is allowed. To display the same
 # content in both banners, define BANNER_TOP and set BANNER_BOTTOM = BANNER_TOP.
-BANNER_TOP = ""
-BANNER_BOTTOM = ""
+BANNER_TOP = os.getenv("NAUTOBOT_BANNER_TOP", "")
+BANNER_BOTTOM = os.getenv("NAUTOBOT_BANNER_BOTTOM", "")
 # Text to include on the login page above the login form. HTML is allowed.
-BANNER_LOGIN = ""
+BANNER_LOGIN = os.getenv("NAUTOBOT_BANNER_LOGIN", "")
 # Base URL path if accessing Nautobot within a directory. For example, if installed at https://example.com/nautobot/, set:
 # BASE_PATH = 'nautobot/'
-BASE_PATH = ""
-# Cache timeout in seconds. Cannot be 0. Defaults to 900 (15 minutes). To disable caching, set CACHEOPS_ENABLED to False
-CACHEOPS_DEFAULTS = {"timeout": 900}
+BASE_PATH = os.getenv("NAUTOBOT_BASE_PATH", "")
+# Cache timeout in seconds. Cannot be 0. Defaults to 300 (5 minutes). To disable caching, set CACHEOPS_ENABLED to False
+CACHEOPS_DEFAULTS = {"timeout": int(os.getenv("NAUTOBOT_REDIS_TIMEOUT", 300))}
 # Set to False to disable caching with cacheops. (Default: True)
-CACHEOPS_ENABLED = True
+CACHEOPS_ENABLED = is_truthy(os.getenv("NAUTOBOT_CACHEOPS_ENABLED", True))
 # Maximum number of days to retain logged changes. Set to 0 to retain changes indefinitely. (Default: 90)
-CHANGELOG_RETENTION = 90
+CHANGELOG_RETENTION = int(os.getenv("NAUTOBOT_CHANGELOG_RETENTION", 90))
 # If True, all origins will be allowed. Other settings restricting allowed origins will be ignored.
 # Defaults to False. Setting this to True can be dangerous, as it allows any website to make
 # cross-origin requests to yours. Generally you'll want to restrict the list of allowed origins with
 # CORS_ALLOWED_ORIGINS or CORS_ALLOWED_ORIGIN_REGEXES.
-CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_ALL_ORIGINS = is_truthy(os.getenv("NAUTOBOT_CORS_ALLOW_ALL_ORIGINS", False))
 # A list of origins that are authorized to make cross-site HTTP requests. Defaults to [].
 CORS_ALLOWED_ORIGINS = [
     # 'https://hostname.example.com',
@@ -153,11 +153,11 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 # Set to True to enable server debugging. WARNING: Debugging introduces a substantial performance penalty and may reveal
 # sensitive information about your installation. Only enable debugging while performing testing. Never enable debugging
 # on a production system.
-DEBUG = False
+DEBUG = is_truthy(os.getenv("NAUTOBOT_DEBUG", False))
 # Enforcement of unique IP space can be toggled on a per-VRF basis. To enforce unique IP space
 # within the global table (all prefixes and IP addresses not assigned to a VRF), set
 # ENFORCE_GLOBAL_UNIQUE to True.
-ENFORCE_GLOBAL_UNIQUE = False
+ENFORCE_GLOBAL_UNIQUE = is_truthy(os.getenv("NAUTOBOT_ENFORCE_GLOBAL_UNIQUE", False))
 # Exempt certain models from the enforcement of view permissions. Models listed here will be viewable by all users and
 # by anonymous users. List models in the form `<app>.<model>`. Add '*' to this list to exempt all models.
 EXEMPT_VIEW_PERMISSIONS = [
@@ -175,7 +175,7 @@ EXEMPT_VIEW_PERMISSIONS = [
 INTERNAL_IPS = ("127.0.0.1", "::1")
 # Enable custom logging. Please see the Django documentation for detailed guidance on configuring custom logs:
 #   https://docs.djangoproject.com/en/stable/topics/logging/
-LOG_LEVEL = "INFO"
+LOG_LEVEL = "DEBUG" if DEBUG else "INFO"
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -191,18 +191,13 @@ LOGGING = {
     },
     "handlers": {
         "normal_console": {
-            "level": "INFO",
+            "level": "DEBUG",
             "class": "rq.utils.ColorizingStreamHandler",
             "formatter": "normal",
         },
-        "verbose_console": {
-            "level": "DEBUG",
-            "class": "rq.utils.ColorizingStreamHandler",
-            "formatter": "verbose",
-        },
     },
     "loggers": {
-        "django": {"handlers": ["normal_console"], "level": "INFO"},
+        "django": {"handlers": ["normal_console"], "level": LOG_LEVEL},
         "nautobot": {
             "handlers": ["normal_console"],
             "level": LOG_LEVEL,
@@ -212,13 +207,17 @@ LOGGING = {
             "level": LOG_LEVEL,
         },
     },
+    "root": {
+        "handlers": ["normal_console"],
+        "level": LOG_LEVEL,
+    },
 }
 # Setting this to True will display a "maintenance mode" banner at the top of every page.
-MAINTENANCE_MODE = False
+MAINTENANCE_MODE = is_truthy(os.getenv("NAUTOBOT_MAINTENANCE_MODE", False))
 # An API consumer can request an arbitrary number of objects =by appending the "limit" parameter to the URL (e.g.
 # "?limit=1000"). This setting defines the maximum limit. Setting it to 0 or None will allow an API consumer to request
 # all objects by specifying "?limit=0".
-MAX_PAGE_SIZE = 1000
+MAX_PAGE_SIZE = int(os.getenv("NAUTOBOT_MAX_PAGE_SIZE", 1000))
 # The file path where uploaded media such as image attachments are stored. A trailing slash is not needed. Note that
 # the default value of this setting is within the invoking user's home directory
 # MEDIA_ROOT = os.path.expanduser('~/.nautobot/media')
@@ -232,17 +231,17 @@ MAX_PAGE_SIZE = 1000
 #     'AWS_S3_REGION_NAME': 'eu-west-1',
 # }
 # Expose Prometheus monitoring metrics at the HTTP endpoint '/metrics'
-METRICS_ENABLED = False
+METRICS_ENABLED = is_truthy(os.getenv("NAUTOBOT_METRICS_ENABLED", False))
 # Credentials that Nautobot will uses to authenticate to devices when connecting via NAPALM.
-NAPALM_USERNAME = ""
-NAPALM_PASSWORD = ""
+NAPALM_USERNAME = os.getenv("NAUTOBOT_NAPALM_USERNAME", "")
+NAPALM_PASSWORD = os.getenv("NAUTOBOT_NAPALM_PASSWORD", "")
 # NAPALM timeout (in seconds). (Default: 30)
-NAPALM_TIMEOUT = 30
+NAPALM_TIMEOUT = int(os.getenv("NAUTOBOT_NAPALM_TIMEOUT", 30))
 # NAPALM optional arguments (see https://napalm.readthedocs.io/en/latest/support/#optional-arguments). Arguments must
 # be provided as a dictionary.
 NAPALM_ARGS = {}
 # Determine how many objects to display per page within a list. (Default: 50)
-PAGINATE_COUNT = 50
+PAGINATE_COUNT = int(os.getenv("NAUTOBOT_PAGINATE_COUNT", 50))
 # Enable installed plugins. Add the name of each plugin to the list.
 PLUGINS = []
 # Plugins configuration settings. These settings are used by various plugins that the user may have installed.
@@ -255,34 +254,34 @@ PLUGINS = []
 # }
 # When determining the primary IP address for a device, IPv6 is preferred over IPv4 by default. Set this to True to
 # prefer IPv4 instead.
-PREFER_IPV4 = False
+PREFER_IPV4 = is_truthy(os.getenv("NAUTOBOT_PREFER_IPV4", False))
 # Rack elevation size defaults, in pixels. For best results, the ratio of width to height should be roughly 10:1.
-RACK_ELEVATION_DEFAULT_UNIT_HEIGHT = 22
-RACK_ELEVATION_DEFAULT_UNIT_WIDTH = 220
+RACK_ELEVATION_DEFAULT_UNIT_HEIGHT = int(os.getenv("NAUTOBOT_RACK_ELEVATION_DEFAULT_UNIT_HEIGHT", 22))
+RACK_ELEVATION_DEFAULT_UNIT_WIDTH = int(os.getenv("NAUTOBOT_RACK_ELEVATION_DEFAULT_UNIT_WIDTH", 220))
 # Remote authentication support
-REMOTE_AUTH_ENABLED = False
-REMOTE_AUTH_BACKEND = "nautobot.core.authentication.RemoteUserBackend"
-REMOTE_AUTH_HEADER = "HTTP_REMOTE_USER"
-REMOTE_AUTH_AUTO_CREATE_USER = True
+REMOTE_AUTH_ENABLED = is_truthy(os.getenv("NAUTOBOT_REMOTE_AUTH_ENABLED", False))
+REMOTE_AUTH_BACKEND = os.getenv("NAUTOBOT_REMOTE_AUTH_BACKEND", "nautobot.core.authentication.RemoteUserBackend")
+REMOTE_AUTH_HEADER = os.getenv("NAUTOBOT_REMOTE_AUTH_HEADER", "HTTP_REMOTE_USER")
+REMOTE_AUTH_AUTO_CREATE_USER = is_truthy(os.getenv("NAUTOBOT_REMOTE_AUTH_AUTO_CREATE_USER", True))
 REMOTE_AUTH_DEFAULT_GROUPS = []
 REMOTE_AUTH_DEFAULT_PERMISSIONS = {}
 # This determines how often the GitHub API is called to check the latest release of Nautobot. Must be at least 1 hour.
-RELEASE_CHECK_TIMEOUT = 24 * 3600
+RELEASE_CHECK_TIMEOUT = int(os.getenv("NAUTOBOT_RELEASE_CHECK_TIMEOUT", 24 * 3600))
 # This repository is used to check whether there is a new release of Nautobot available. Set to None to disable the
 # version check or use the URL below to check for release in the official Nautobot repository.
-RELEASE_CHECK_URL = None
+RELEASE_CHECK_URL = os.getenv("NAUTOBOT_RELEASE_CHECK_URL", None)
 # RELEASE_CHECK_URL = 'https://api.github.com/repos/nautobot/nautobot/releases'
 # Maximum execution time for background tasks, in seconds.
-RQ_DEFAULT_TIMEOUT = 300
+RQ_DEFAULT_TIMEOUT = int(os.getenv("NAUTOBOT_RQ_DEFAULT_TIMEOUT", 300))
 # The length of time (in seconds) for which a user will remain logged into the web UI before being prompted to
 # re-authenticate. (Default: 1209600 [14 days])
-SESSION_COOKIE_AGE = 1209600  # 2 weeks, in seconds
+SESSION_COOKIE_AGE = int(os.getenv("NAUTOBOT_SESSION_COOKIE_AGE", 1209600))  # 2 weeks, in seconds
 # By default, Nautobot will store session data in the database. Alternatively, a file path can be specified here to use
 # local file storage instead. (This can be useful for enabling authentication on a standby instance with read-only
 # database access.) Note that the user as which Nautobot runs must have read and write permissions to this path.
-SESSION_FILE_PATH = None
+SESSION_FILE_PATH = os.getenv("NAUTOBOT_SESSION_FILE_PATH", None)
 # Configure SSO, for more information see docs/configuration/authentication/sso.md
-SOCIAL_AUTH_ENABLED = False
+SOCIAL_AUTH_ENABLED = is_truthy(os.getenv("NAUTOBOT_SOCIAL_AUTH_ENABLED", False))
 # Time zone (default: UTC)
 TIME_ZONE = "UTC"
 # Date/time formatting. See the following link for supported formats:
