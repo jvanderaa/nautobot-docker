@@ -283,15 +283,15 @@ SESSION_FILE_PATH = os.getenv("NAUTOBOT_SESSION_FILE_PATH", None)
 # Configure SSO, for more information see docs/configuration/authentication/sso.md
 SOCIAL_AUTH_ENABLED = is_truthy(os.getenv("NAUTOBOT_SOCIAL_AUTH_ENABLED", False))
 # Time zone (default: UTC)
-TIME_ZONE = "UTC"
+TIME_ZONE = os.getenv("NAUTOBOT_TIME_ZONE", "UTC")
 # Date/time formatting. See the following link for supported formats:
 # https://docs.djangoproject.com/en/stable/ref/templates/builtins/#date
-DATE_FORMAT = "N j, Y"
-SHORT_DATE_FORMAT = "Y-m-d"
-TIME_FORMAT = "g:i a"
-SHORT_TIME_FORMAT = "H:i:s"
-DATETIME_FORMAT = "N j, Y g:i a"
-SHORT_DATETIME_FORMAT = "Y-m-d H:i"
+DATE_FORMAT = os.getenv("NAUTOBOT_DATE_FORMAT", "N j, Y")
+SHORT_DATE_FORMAT = os.getenv("NAUTOBOT_SHORT_DATE_FORMAT", "Y-m-d")
+TIME_FORMAT = os.getenv("NAUTOBOT_TIME_FORMAT", "g:i a")
+SHORT_TIME_FORMAT = os.getenv("NAUTOBOT_SHORT_TIME_FORMAT", "H:i:s")
+DATETIME_FORMAT = os.getenv("NAUTOBOT_DATETIME_FORMAT", "N j, Y g:i a")
+SHORT_DATETIME_FORMAT = os.getenv("NAUTOBOT_SHORT_DATETIME_FORMAT", "Y-m-d H:i")
 # A list of strings designating all applications that are enabled in this Django installation. Each string should be a dotted Python path to an application configuration class (preferred), or a package containing an application.
 # https://nautobot.readthedocs.io/en/latest/configuration/optional-settings/#extra-applications
 EXTRA_INSTALLED_APPS = []
