@@ -29,7 +29,6 @@ RUN poetry config virtualenvs.create false
 # For now we disable it.
 RUN poetry config installer.parallel false
 
-
 COPY poetry.lock pyproject.toml /opt/nautobot/
 WORKDIR /opt/nautobot
 
@@ -37,24 +36,28 @@ RUN poetry install
 
 FROM python:3.8-slim as final
 
-RUN apt update && apt install -y git
+ENV NAUTOBOT_ROOT /opt/nautobot
 
-RUN groupadd -g 1024 nautobot && \
-    useradd -u 1024 -m -g nautobot nautobot
+RUN apt update && apt upgrade -y && apt install -y git && apt autoremove -y && apt clean all
+
+RUN useradd --system --shell /bin/bash --create-home --home-dir /opt/nautobot nautobot
 
 USER nautobot
 
+# Copy from base the required items
 COPY --from=base /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
 COPY --from=base /usr/local/bin /usr/local/bin
+
+# Required for static image, specifically the logo
 COPY --from=base /etc/mime.types /etc/mime.types
 
 WORKDIR /opt/nautobot
 
-RUN nautobot-server init
+COPY nautobot_config.py contrib/uwsgi.ini entrypoint.sh ./
 
-COPY nautobot_config.py uwsgi.ini entrypoint.sh ./
-
-ENV NAUTOBOT_CONFIG /opt/nautobot/nautobot_config.py
+# Collect static files here, this increases the size of the container for the worker but decreases
+# the necessary start time for the containers.
+RUN nautobot-server collectstatic
 
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD [ "nautobot-server", "check" ]
 

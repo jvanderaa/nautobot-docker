@@ -1,16 +1,30 @@
 ---
+x-nautobot: &nautobot
+  image: "networktocode/nautobot:v0.0.1"
+  depends_on:
+    - postgres
+    - redis
+  env_file:
+    - dev.env
+  tty: true
+
+x-nautobot-worker: 
+
 version: "3"
 services:
-  nautobot:
-    image: "whitej6/nautobot:v1.0.0b2"
+  nautobot1:
+    <<: *nautobot
     ports:
-      - "8001:8001"
-    depends_on:
-      - postgres
-      - redis
-    env_file:
-      - dev.env
-    tty: true
+      - "8011:8001"
+  nautobot2:
+    <<: *nautobot
+    ports:
+      - "8012:8001"
+  worker1:
+    <<: *nautobot-worker
+    ports:
+      - ""
+
   postgres:
     image: postgres:10
     env_file:
