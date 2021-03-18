@@ -24,7 +24,6 @@ REQUIRED_ENV_VARS = [
     "NAUTOBOT_DB_PASSWORD",
     "NAUTOBOT_DB_HOST",
     "NAUTOBOT_REDIS_HOST",
-    "NAUTOBOT_REDIS_PORT",
     "NAUTOBOT_SECRET_KEY"
 ]
 
@@ -52,14 +51,14 @@ DATABASES = {
         "PASSWORD": os.getenv("NAUTOBOT_DB_PASSWORD", ""),  # Datbase password
         "HOST": os.getenv("NAUTOBOT_DB_HOST", "localhost"),  # Database server
         "PORT": os.getenv("NAUTOBOT_DB_PORT", ""),  # Database port (leave blank for default)
-        "CONN_MAX_AGE": os.getenv("NAUTOBOT_DB_TIMEOUT", 300),  # Database timeout
+        "CONN_MAX_AGE": int(os.getenv("NAUTOBOT_DB_TIMEOUT", "300")),  # Database timeout
         "ENGINE": "django.db.backends.postgresql",  # Database driver (Postgres only supported!)
     }
 }
 # Nautobot uses RQ for task scheduling. These are the following defaults.
 # For detailed configuration see: https://github.com/rq/django-rq#installation
 RQ_QUEUES = {
-    "default": {"HOST": os.getenv("NAUTOBOT_REDIS_HOST"), "PORT": int(os.getenv("NAUTOBOT_REDIS_PORT", 6379)), "DB": 0, "PASSWORD": os.getenv("NAUTOBOT_REDIS_PASSWORD", ""), "SSL": is_truthy(os.getenv("NAUTOBOT_REDIS_SSL", False)), "DEFAULT_TIMEOUT": int(os.getenv("NAUTOBOT_REDIS_TIMEOUT", 300))},
+    "default": {"HOST": os.getenv("NAUTOBOT_REDIS_HOST"), "PORT": int(os.getenv("NAUTOBOT_REDIS_PORT", "6379")), "DB": "0", "PASSWORD": os.getenv("NAUTOBOT_REDIS_PASSWORD", ""), "SSL": is_truthy(os.getenv("NAUTOBOT_REDIS_SSL", False)), "DEFAULT_TIMEOUT": int(os.getenv("NAUTOBOT_REDIS_TIMEOUT", "300"))},
     # "with-sentinel": {
     #     "SENTINELS": [
     #         ("mysentinel.redis.example.com", 6379)
@@ -75,17 +74,24 @@ RQ_QUEUES = {
     # },
     "check_releases": {
         "HOST": os.getenv("NAUTOBOT_REDIS_HOST"),
-        "PORT": int(os.getenv("NAUTOBOT_REDIS_PORT", 6379)),
+        "PORT": int(os.getenv("NAUTOBOT_REDIS_PORT", "6379")),
         "DB": 0,
         "PASSWORD": os.getenv("NAUTOBOT_REDIS_PASSWORD", ""),
         "SSL": is_truthy(os.getenv("NAUTOBOT_REDIS_SSL", False)),
-        "DEFAULT_TIMEOUT": int(os.getenv("NAUTOBOT_REDIS_TIMEOUT", 300)),
+        "DEFAULT_TIMEOUT": int(os.getenv("NAUTOBOT_REDIS_TIMEOUT", "300")),
     },
 }
 # Nautobot uses Cacheops for database query caching. These are the following defaults.
 # For detailed configuration see: https://github.com/Suor/django-cacheops#setup
 REDIS_PROTOCOL = "rediss" if is_truthy(os.getenv("NAUTOBOT_REDIS_SSL", False)) else "redis"
-CACHEOPS_REDIS = os.getenv("NAUTOBOT_CACHEOPS_REDIS", "{REDIS_PROTOCOL}://{os.getenv('NAUTOBOT_REDIS_HOST')}:{os.getenv('NAUTOBOT_REDIS_PORT', 6379)}/1")
+
+# Set Cache Ops variables
+cache_ops_pwd = os.getenv('NAUTOBOT_REDIS_PASSWORD')
+cache_ops_host = os.getenv('NAUTOBOT_REDIS_HOST')
+cache_ops_user = os.getenv('NAUTOBOT_REDIS_USER')
+cache_ops_port = int(os.getenv('NAUTOBOT_REDIS_PORT', 6379))
+
+CACHEOPS_REDIS = os.getenv("NAUTOBOT_CACHEOPS_REDIS", f"{REDIS_PROTOCOL}://{cache_ops_host}:{cache_ops_port}/1")
 # This key is used for secure generation of random numbers and strings. It must never be exposed outside of this file.
 # For optimal security, SECRET_KEY should be at least 50 characters in length and contain a mix of letters, numbers, and
 # symbols. Nautobot will not run without this defined. For more information, see

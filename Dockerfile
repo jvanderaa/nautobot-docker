@@ -55,10 +55,6 @@ WORKDIR /opt/nautobot
 
 COPY nautobot_config.py contrib/uwsgi.ini entrypoint.sh ./
 
-# Collect static files here, this increases the size of the container for the worker but decreases
-# the necessary start time for the containers.
-RUN nautobot-server collectstatic
-
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD [ "nautobot-server", "check" ]
 
 ENTRYPOINT ["./entrypoint.sh"]

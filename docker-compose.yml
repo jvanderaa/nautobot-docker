@@ -1,43 +1,37 @@
 ---
-x-nautobot: &nautobot
-  image: "networktocode/nautobot:v0.0.1"
-  depends_on:
-    - postgres
-    - redis
-  env_file:
-    - dev.env
-  tty: true
-
-x-nautobot-worker: 
-
 version: "3"
 services:
-  nautobot1:
-    <<: *nautobot
-    ports:
-      - "8011:8001"
-  nautobot2:
-    <<: *nautobot
-    ports:
-      - "8012:8001"
-  worker1:
-    <<: *nautobot-worker
-    ports:
-      - ""
-
-  postgres:
-    image: postgres:10
+  nautobot:
+    image: "networktocode/nautobot:v0.0.1"
+    depends_on:
+      - postgres
+      - redis
     env_file:
-      - dev.env
+      - .env
+    tty: true
+    ports:
+      - "8080:8001"
+  nautobot-worker:
+    image: "networktocode/nautobot:v0.0.1"
+    depends_on:
+      - postgres
+      - redis
+    env_file:
+      - .env
+    tty: true
+  postgres:
+    image: postgres:13-alpine
+    env_file:
+      - .env
     volumes:
       - pgdata_nautobot:/var/lib/postgresql/data
   redis:
-    image: redis:5-alpine
+    image: redis:6-alpine
     command:
       - sh
       - -c # this is to evaluate the $REDIS_PASSWORD from the env
       - redis-server --appendonly yes --requirepass $$REDIS_PASSWORD ## $$ because of docker-compose
     env_file:
-      - dev.env
+      - .env
 volumes:
   pgdata_nautobot:
